@@ -15,9 +15,13 @@ add_library(htfs SHARED
 	libhtfs/map.c
 )
 
+add_executable(htfsinfo
+	htfsinfo.c
+)
 
 add_executable(mkhtfs
 	mkhtfs.c
 )
 
+target_link_libraries(htfsinfo PRIVATE htfs)
 target_link_libraries(mkhtfs PRIVATE htfs)
