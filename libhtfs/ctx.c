@@ -6,9 +6,11 @@
 #include <libhtfs/htfs.h>
 
 int
-htfsopen(HtfsCtx *ctx, char *path, uint64_t sblk)
+htfsopen(HtfsCtx *ctx, char *path)
 {
 	FILE *fp;
+	AllocMap *map;
+	uint64_t mapsize;
 
 	if(ctx == NULL)
 		return Hnoctx;
@@ -17,16 +19,35 @@ htfsopen(HtfsCtx *ctx, char *path, uint64_t sblk)
 	if(fp == NULL)
 		return Hnofile;
 
-	fseek(fp, sblk, SEEK_SET);
+	fseek(fp, ctx->sblksec * ctx->sblk.blksize , SEEK_SET);
 	fread(&ctx->sblk, sizeof(ctx->sblk), 1, fp);
 
 	if(memcmp(&ctx->sblk.magic[0], "HTFS", sizeof(ctx->sblk.magic)) != 0){
 		fclose(fp);
-		return 1;
+		return Hnohtfs;
+	}
+	ctx->drv = fp;
+
+	FSSEEK(ctx->sblksec + OFF_MAP);
+
+	/* read alloc map size in byte */
+	fread(&mapsize, sizeof(mapsize), 1, fp);
+
+	if(mapsize == 0){
+		fclose(fp);
+		return Hcorrupted;
 	}
 
-	ctx->drv = fp;
-	ctx->sblksec = sblk;
+	map = malloc(mapsize);
+	if(map == NULL){
+		fclose(fp);
+		return Hnull;
+	}
+
+	FSSEEK(ctx->sblksec + OFF_MAP);
+	fread(map, mapsize, 1, fp);
+
+	ctx->map = map;
 
 	return Hok;
 }
@@ -35,7 +56,7 @@ int
 htfsclose(HtfsCtx *ctx)
 {
 	uint64_t i;
-	AllocMap *end;
+	AllocMap *end, *backup;
 	uint8_t *sblkbuf;
 
 	if(ctx == NULL)
@@ -55,10 +76,12 @@ htfsclose(HtfsCtx *ctx)
 
 	htfswrtblk(ctx, ctx->sblksec, sblkbuf);
 
+	backup = ctx->map;
 	for(i =0, end = ctx->map + ctx->map->size ;  ctx->map < end; ctx->map += ctx->sblk.blksize, i++)
 		htfswrtblk(ctx, ctx->sblksec + OFF_MAP + i, (uint8_t*)ctx->map);
 
 	fclose(ctx->drv);
+	free(backup);
 	memset(ctx, 0, sizeof(*ctx));
 
 	return Hok;

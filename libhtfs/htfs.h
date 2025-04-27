@@ -12,6 +12,8 @@ enum {
 	Hnull,
 	Hdiskfull,
 	Hnotfree,
+	Hnohtfs,
+	Hcorrupted,
 };
 
 /*
@@ -45,9 +47,9 @@ struct HtfsCtx {
 	FILE 		*drv;
 };
 
-#define FSSEEK(blk) fseek(ctx->drv, blk * ctx->sblk.blksize, SEEK_SET)
+#define FSSEEK(blk) fseek(ctx->drv, (blk) * ctx->sblk.blksize, SEEK_SET)
 
-int htfsopen(HtfsCtx *ctx, char *path, uint64_t sblk);
+int htfsopen(HtfsCtx *ctx, char *path);
 
 /*
  * writes in memory superblock and allocation map to disk
