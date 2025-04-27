@@ -1,0 +1,6 @@
+HTFS Collection
+
+Userspace tools for creating and modifying HTFS partitions.
+The Hash Tree Filesystem is the filesystem for PuK (Pascal Micro Kernel).
+See the specification for more information: <soon>
+
