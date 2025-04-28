@@ -25,7 +25,7 @@ main(int argc, char *argv[])
 {
 	HtfsCtx ctx;
 
-	if(argc > 3 || argc != 2)
+	if(argc != 3 && argc != 2)
 		usage();
 
 	ctx.sblksec = 1;
