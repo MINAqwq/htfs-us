@@ -6,11 +6,14 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_compile_options(-fplan9-extensions)
 
 include_directories("./")
 
 add_library(htfs SHARED
+	libhtfs/bptree.c
 	libhtfs/ctx.c
 	libhtfs/map.c
 )

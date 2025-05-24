@@ -1,6 +1,9 @@
 typedef struct SuperBlk SuperBlk;
 typedef struct HtfsCtx HtfsCtx;
 typedef struct AllocMap AllocMap;
+typedef struct BpTreeItem BpTreeItem;
+typedef struct BpTreeNode BpTreeNode;
+typedef struct BpTreeLeaf BpTreeLeaf;
 
 /* alloation map block offset */
 #define OFF_MAP 1
@@ -65,3 +68,30 @@ uint64_t findfreeblk(AllocMap *map);
 int allocblk(AllocMap *map, uint64_t blk);
 
 int freeblk(AllocMap *map, uint64_t blk);
+
+enum {
+	BptNode,
+	BptLeaf,
+}
+
+/*
+ * Base structure for tree items
+ */
+struct BpTreeItem {
+	uint16_t	type;
+	uint8_t	hash[14];
+};
+
+struct BpTreeNode {
+	BpTreeItem;
+
+	uint64_t	left;
+	uint64_t	right;
+};
+
+struct BpTreeLeaf {
+	BpTreeItem;
+
+	uint64_t data;
+	uint64_t next; /* only set on last entry */
+};
