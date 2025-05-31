@@ -38,14 +38,17 @@ htfsopen(HtfsCtx *ctx, char *path)
 		return Hcorrupted;
 	}
 
-	map = malloc(mapsize);
+	/*
+	 * always allocate enough memory to "simulate" disk blocks
+	 */
+	map = malloc(((uint64_t)((sizeof(*map) + mapsize) / 512) + 0.999) * 512);
 	if(map == NULL){
 		fclose(fp);
 		return Hnull;
 	}
 
 	FSSEEK(ctx->sblksec + OFF_MAP);
-	fread(map, mapsize, 1, fp);
+	fread(map, sizeof(*ctx->map) + mapsize, 1, fp);
 
 	ctx->map = map;
 
@@ -75,10 +78,15 @@ htfsclose(HtfsCtx *ctx)
 	memcpy(sblkbuf, &ctx->sblk, sizeof(ctx->sblk));
 
 	htfswrtblk(ctx, ctx->sblksec, sblkbuf);
+	free(sblkbuf);
 
 	backup = ctx->map;
-	for(i =0, end = ctx->map + ctx->map->size ;  ctx->map < end; ctx->map += ctx->sblk.blksize, i++)
-		htfswrtblk(ctx, ctx->sblksec + OFF_MAP + i, (uint8_t*)ctx->map);
+	
+	for(i = 0; i <= ((int)(ctx->map->size / 512) + 0.999); i++){
+		printf("map st: %lu\n", ctx->sblksec + OFF_MAP + i);
+		htfswrtblk(ctx, ctx->sblksec + OFF_MAP + i, (uint8_t*)ctx->map + (i * ctx->sblk.blksize));
+	}
+
 
 	fclose(ctx->drv);
 	free(backup);
