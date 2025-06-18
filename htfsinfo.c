@@ -23,6 +23,7 @@ usage(void)
 void
 main(int argc, char *argv[])
 {
+	BpTreeLeaf *v;
 	HtfsCtx ctx;
 
 	if(argc != 3 && argc != 2)
@@ -40,10 +41,24 @@ main(int argc, char *argv[])
 		"Label: %.*s\n"
 		"Total Blocks: %ld\n",
 
-		sizeof(ctx.sblk.label),
+		(int)sizeof(ctx.sblk.label),
 		ctx.sblk.label,
 		ctx.map->size * 8
 		);
+
+		BpTreeRangeCtx rctx;
+		rctx.i = 0;
+		rctx.buffer = NULL;
+
+
+		for(v = bpscan(&ctx, ctx.sblk.root, &rctx);
+			v != NULL;
+			v = bpscan(&ctx, ctx.sblk.root, &rctx)){
+				if(v->data == 0)
+					continue;
+
+				fprintf(stderr, "Entry %02lX -> %lu\n", rctx.i, v->data);
+		}
 
 	exit(EXIT_SUCCESS);
 }

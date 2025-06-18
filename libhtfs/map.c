@@ -26,6 +26,9 @@ findfreeblk(AllocMap *map)
 		? map->latest / 8
 		: 0;
 
+	/*
+	 * only start a second search if we are NOT at the beginning
+	 */
 	secnd = (i == 0) ? 1 : 0;
 
 search:
@@ -70,4 +73,20 @@ allocblk(AllocMap *map, uint64_t blk)
 int
 freeblk(AllocMap *map, uint64_t blk)
 {
+	uint64_t ib;
+	uint8_t *bp;
+
+	bp = &map->blks[blk / 8];
+	ib = (0x80 >> (blk % 8));
+
+	/*
+	 * check if block is actually allocated
+	 */
+	if(*bp & ib){
+		return Halreadyfree;
+	}
+
+	*bp ^= ib;
+
+	return Hok;
 }

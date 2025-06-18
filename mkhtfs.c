@@ -34,8 +34,9 @@ void
 main(int argc, char **argv)
 {
 	size_t fsize, mapsize;
-	uint64_t blks, i, blkstart;
+	uint64_t blks, i, blkstart, root;
 	HtfsCtx ctx;
+	HtfsFileEntry *entry;
 
 	if(argc != 4)
 		usage();
@@ -71,8 +72,8 @@ main(int argc, char **argv)
 	fsize = ftell(ctx.drv);
 
 	blks = fsize / 512;
-	if(blks < 4)
-		fatal("Your disk needs at least 4 blocks");
+	if(blks < 5)
+		fatal("Your disk needs at least 5 blocks");
 
 	/* Add 0.999 to always round up */
 	mapsize = ((blks / 8) + 0.999);
@@ -90,6 +91,20 @@ main(int argc, char **argv)
 	blkstart = ctx.map->latest;
 	for(i = 0; i < ((mapsize / 512)); i++)
 		allocblk(ctx.map, ctx.map->latest + 1);
+
+	root = ctx.map->latest + 1;
+	allocblk(ctx.map, root);
+	ctx.sblk.root = root;
+	
+	if(bpinit(&ctx, root) != Hok)
+		fatal("bpinit on root dir failed\n");
+
+	entry = entrycreate(&ctx);
+	if(entryrename(&ctx, entry, "testfile") != Hok)
+		fatal("failed to rename\n");
+
+	if(entryput(&ctx, root, entry) != Hok)
+		fatal("failed to put fileentry onto disk\n");
 
 	htfsclose(&ctx);
 	fputs("finished\n", stderr);

@@ -120,6 +120,7 @@ htfswrtblk(const HtfsCtx *ctx, uint64_t blk, uint8_t *buffer)
 		return Hnull;
 
 	FSSEEK(blk);
+	fprintf(stderr, "writing to %04lX\n", ftell(ctx->drv));
 	fwrite(buffer, ctx->sblk.blksize, 1, ctx->drv);
 	return Hok;
 }
