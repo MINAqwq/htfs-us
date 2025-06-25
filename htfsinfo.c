@@ -25,6 +25,7 @@ main(int argc, char *argv[])
 {
 	BpTreeLeaf *v;
 	HtfsCtx ctx;
+	HtfsFileEntry *file;
 
 	if(argc != 3 && argc != 2)
 		usage();
@@ -46,19 +47,24 @@ main(int argc, char *argv[])
 		ctx.map->size * 8
 		);
 
-		BpTreeRangeCtx rctx;
-		rctx.i = 0;
-		rctx.buffer = NULL;
+	BpTreeRangeCtx rctx;
+	rctx.i = 0;
+	rctx.buffer = NULL;
 
 
-		for(v = bpscan(&ctx, ctx.sblk.root, &rctx);
-			v != NULL;
-			v = bpscan(&ctx, ctx.sblk.root, &rctx)){
-				if(v->data == 0)
-					continue;
+	file = (HtfsFileEntry*)mkbuffer(&ctx);
+	for(v = bpscan(&ctx, ctx.sblk.root, &rctx);
+		v != NULL;
+		v = bpscan(&ctx, ctx.sblk.root, &rctx)){
+			if(v->data == 0)
+				continue;
 
-				fprintf(stderr, "Entry %02lX -> %lu\n", rctx.i, v->data);
-		}
+			fprintf(stderr, "> Entry %02lX -> %lu\n", rctx.i, v->data);
+			if(htfsrdblk(&ctx, v->data, (uint8_t*)file) != Hok)
+				fputs("> [0] nil\n", stderr);
+
+			fprintf(stderr, ">> [% 8d] %s\n", file->size, file->name);
+	}
 
 	exit(EXIT_SUCCESS);
 }

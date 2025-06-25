@@ -189,16 +189,17 @@ bpinsert(const HtfsCtx *ctx, uint64_t root, BptKey key, uint64_t data)
 	BpTreeLeafResult *res;
 	BpTreeLeaf *leaf;
 
-	printf("findleaf\n");
+	fprintf(stderr, "searching leaf for root[%02X/%02X] at %lu\n", (uint8_t)key[0], (uint8_t)key[1], root);
 	res = bpfindleaf(ctx, root, key);
 
 	if(res->depth == 0)
 		return Hdiskfull;
 
+	fprintf(stderr, "result: %d | leaf: %d\n", res->depth, res->path[res->depth - 1]);
+
 	leaf = (BpTreeLeaf*)mkbuffer(ctx);
-	if(htfsrdblk(ctx, res->path[0], (uint8_t*)leaf) != Hok){
+	if(htfsrdblk(ctx, res->path[res->depth - 1], (uint8_t*)leaf) != Hok){
 		free(leaf);
-		printf("Hnull\n");
 		return Hnull;
 	}
 
@@ -208,7 +209,7 @@ bpinsert(const HtfsCtx *ctx, uint64_t root, BptKey key, uint64_t data)
 
 		memcpy(leaf[i].hash, key, sizeof(leaf[i].hash));
 		leaf[i].data = data;
-		return htfswrtblk(ctx, res->path[0], (uint8_t*)leaf);
+		return htfswrtblk(ctx, res->path[res->depth - 1], (uint8_t*)leaf);
 	}
 
 	printf("disk full???\n");

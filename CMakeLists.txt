@@ -16,8 +16,10 @@ add_library(htfs SHARED
 	libhtfs/bptree.c
 	libhtfs/ctx.c
 	libhtfs/entry.c
+	libhtfs/file.c
 	libhtfs/helper.c
 	libhtfs/map.c
+	libhtfs/path.c
 )
 
 add_executable(htfsinfo

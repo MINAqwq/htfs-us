@@ -83,7 +83,6 @@ htfsclose(HtfsCtx *ctx)
 	backup = ctx->map;
 	
 	for(i = 0; i <= ((int)(ctx->map->size / 512) + 0.999); i++){
-		printf("map st: %lu\n", ctx->sblksec + OFF_MAP + i);
 		htfswrtblk(ctx, ctx->sblksec + OFF_MAP + i, (uint8_t*)ctx->map + (i * ctx->sblk.blksize));
 	}
 

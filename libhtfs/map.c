@@ -67,6 +67,7 @@ allocblk(AllocMap *map, uint64_t blk)
 
 	*bp |= ib;
 	map->latest = blk;
+	
 	return Hok;
 }
 

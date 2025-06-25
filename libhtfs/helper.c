@@ -4,7 +4,7 @@
 #include <string.h>
 #include <blake3.h>
 
-#include <libhtfs/htfs.h>
+#include "htfs.h"
 
 uint8_t *
 mkbuffer(const HtfsCtx *ctx)
@@ -74,5 +74,18 @@ nametokey(char *name, BptKey key)
 	blake3_hasher_update(&hasher, name, len);
 	blake3_hasher_finalize(&hasher, key, sizeof(BptKey));
 
+	return Hok;
+}
+
+int
+strskip(char *str)
+{
+	if(!str)
+		return Hnull;
+
+	while(*str)
+		str++;
+
+	str++;
 	return Hok;
 }

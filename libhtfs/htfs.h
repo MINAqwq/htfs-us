@@ -7,6 +7,7 @@ typedef struct BpTreeLeaf BpTreeLeaf;
 typedef struct BpTreeRangeCtx BpTreeRangeCtx;
 typedef struct BpTreeLeafResult BpTreeLeafResult;
 typedef struct HtfsFileEntry HtfsFileEntry;
+typedef struct HtfsFileCtx HtfsFileCtx;
 
 /* alloation map block offset */
 #define OFF_MAP 1
@@ -22,7 +23,8 @@ enum {
 	Hcorrupted,
 	Halreadyfree,
 	Hnotfound,
-	Hinvalidname
+	Hinvalidname,
+	Hinvalidpath
 };
 
 /*
@@ -180,9 +182,40 @@ HtfsFileEntry *entrycreate(HtfsCtx *ctx);
 
 int entryrename(HtfsCtx *ctx, HtfsFileEntry *file, char *name);
 
-int entryput(HtfsCtx *ctx, uint64_t parent, HtfsFileEntry *file);
+int entryput(HtfsCtx *ctx, uint64_t parent, HtfsFileEntry *file, uint64_t *blk);
 int entrydel(HtfsCtx *ctx, uint64_t parent, char *name);
-HtfsFileEntry *entryget(HtfsCtx *ctx, uint64_t parent, char *name);
+HtfsFileEntry *entryget(HtfsCtx *ctx, uint64_t parent, char *name, uint64_t *blk);
+int entryupdate(HtfsCtx *ctx, uint64_t parent, HtfsFileEntry *file);
 
 char *strsafeld(HtfsCtx *ctx, char *str);
 int nametokey(char *name, BptKey key);
+
+struct HtfsFileCtx {
+	HtfsFileEntry *file;
+	uint64_t off;
+	uint64_t parent;
+};
+
+enum {
+	Sabs, /* absolute */
+	Scur  /* from current */
+};
+
+int filecreate(HtfsCtx *ctx, HtfsFileCtx *fctx, char *path, uint64_t root, uint8_t attr);
+int fileopen(HtfsCtx *ctx, HtfsFileCtx *fctx, char *path, uint64_t root);
+int fileupdate(HtfsCtx *ctx, HtfsFileCtx *fctx);
+
+uint64_t filegetdata(HtfsCtx *ctx, HtfsFileCtx *file, BptKey key);
+size_t filewrite(HtfsCtx *ctx, HtfsFileCtx *file, uint8_t *data, size_t len);
+size_t fileread(HtfsCtx *ctx, HtfsFileCtx *file, uint8_t *data, size_t len);
+void fileseek(HtfsFileCtx *file, int64_t where, int mode);
+
+/*
+ * Returns copy of string with '/' replaced by 0s
+ */
+char *pathparse(const char *path, size_t *depth);
+
+/*
+ * seek to (pos of next 0) + 1
+ */
+int strskip(char *str);

@@ -7,9 +7,12 @@
 
 #include <string.h>
 
+
 HtfsFileEntry *
 entrycreate(HtfsCtx *ctx)
 {
+	int res;
+	uint64_t blk;
 	HtfsFileEntry *file;
 
 	file = (HtfsFileEntry*)mkbuffer(ctx);
@@ -17,6 +20,22 @@ entrycreate(HtfsCtx *ctx)
 
 	file->ctime = time(NULL);
 	file->mtime = file->ctime;
+
+	blk = findfreeblk(ctx->map);
+	res = allocblk(ctx->map, blk);
+	if(res != Hok){
+		free(file);
+		return NULL;
+	}
+
+	res = bpinit(ctx, blk);
+	if(res != Hok){
+		freeblk(ctx->map, blk);
+		free(file);
+		return NULL;
+	}
+
+	file->root = blk;
 
 	return file;
 }
@@ -27,6 +46,7 @@ entryrename(HtfsCtx *ctx, HtfsFileEntry *file, char *name)
 	long len;
 
 	len = strlen(name);
+	fprintf(stderr, "len: %d\n", len);
 	if(len == 0 || len >= (bpspace(ctx) - sizeof(*file)))
 		return Hinvalidname;
 
@@ -36,10 +56,10 @@ entryrename(HtfsCtx *ctx, HtfsFileEntry *file, char *name)
 }
 
 int
-entryput(HtfsCtx *ctx, uint64_t parent, HtfsFileEntry *file)
+entryput(HtfsCtx *ctx, uint64_t parent, HtfsFileEntry *file, uint64_t *blk)
 {
 	int res;
-	uint64_t blk;
+	uint64_t dblk;
 	BptKey key;
 
 	if(ctx == NULL || parent == 0 || file == NULL)
@@ -47,12 +67,12 @@ entryput(HtfsCtx *ctx, uint64_t parent, HtfsFileEntry *file)
 
 	printf("put %s to %d\n", file->name, parent);
 
-	blk = findfreeblk(ctx->map);
-	res = allocblk(ctx->map, blk);
+	dblk = findfreeblk(ctx->map);
+	res = allocblk(ctx->map, dblk);
 	if(res != Hok)
 		return res;
 
-	res = htfswrtblk(ctx, blk, (uint8_t*)file);
+	res = htfswrtblk(ctx, dblk, (uint8_t*)file);
 	if(res != Hok)
 		goto error;
 
@@ -60,14 +80,17 @@ entryput(HtfsCtx *ctx, uint64_t parent, HtfsFileEntry *file)
 	if(res != Hok)
 		goto error;
 
-	res = bpinsert(ctx, parent, key, blk);
+	res = bpinsert(ctx, parent, key, dblk);
 	if(res != Hok)
 		goto error;
+
+	if(blk)
+		*blk = dblk;
 
 	return Hok;
 
 error:
-	freeblk(ctx->map, blk);
+	freeblk(ctx->map, dblk);
 	return res;
 }
 
@@ -100,7 +123,7 @@ entrydel(HtfsCtx *ctx, uint64_t parent, char *name)
 }
 
 HtfsFileEntry *
-entryget(HtfsCtx *ctx, uint64_t parent, char *name)
+entryget(HtfsCtx *ctx, uint64_t parent, char *name, uint64_t *blk)
 {
 	int res;
 	BptKey key;
@@ -119,6 +142,10 @@ entryget(HtfsCtx *ctx, uint64_t parent, char *name)
 		return NULL;
 
 	file = (HtfsFileEntry*)mkbuffer(ctx);
+
+	if(blk)
+		*blk = data;
+
 	res = htfsrdblk(ctx, data, (uint8_t*)file);
 	if(res != Hok){
 		free(file);
@@ -126,4 +153,12 @@ entryget(HtfsCtx *ctx, uint64_t parent, char *name)
 	}
 
 	return file;
+}
+
+int
+entryupdate(HtfsCtx *ctx, uint64_t fileblk, HtfsFileEntry *file)
+{
+	return (ctx == NULL || fileblk == 0 || file == NULL)
+		? Hnull
+		: htfswrtblk(ctx, fileblk, (uint8_t*)file);
 }

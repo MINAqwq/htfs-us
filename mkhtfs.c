@@ -37,6 +37,7 @@ main(int argc, char **argv)
 	uint64_t blks, i, blkstart, root;
 	HtfsCtx ctx;
 	HtfsFileEntry *entry;
+	HtfsFileCtx fctx;
 
 	if(argc != 4)
 		usage();
@@ -96,15 +97,19 @@ main(int argc, char **argv)
 	allocblk(ctx.map, root);
 	ctx.sblk.root = root;
 	
+	fprintf(stderr, "Initializing root dir\n");
 	if(bpinit(&ctx, root) != Hok)
 		fatal("bpinit on root dir failed\n");
+	
+	if(filecreate(&ctx, &fctx, "/meta", root, 0) != Hok)
+		fatal("file creation failed\n");
 
-	entry = entrycreate(&ctx);
-	if(entryrename(&ctx, entry, "testfile") != Hok)
-		fatal("failed to rename\n");
+	printf("wrote %d bytes to %s\n",
+		filewrite(&ctx, &fctx, "mina // mina ///", 16),
+		fctx.file->name);
 
-	if(entryput(&ctx, root, entry) != Hok)
-		fatal("failed to put fileentry onto disk\n");
+	if(fileupdate(&ctx, &fctx) != Hok)
+		fatal("failed to update entry");
 
 	htfsclose(&ctx);
 	fputs("finished\n", stderr);
