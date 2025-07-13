@@ -30,6 +30,11 @@ add_executable(mkhtfs
 	mkhtfs.c
 )
 
+add_executable(htfscp
+	htfscp.c
+)
+
 target_link_libraries(htfs PRIVATE blake3)
 target_link_libraries(htfsinfo PRIVATE htfs)
 target_link_libraries(mkhtfs PRIVATE htfs)
+target_link_libraries(htfscp PRIVATE htfs)

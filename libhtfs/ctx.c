@@ -6,7 +6,7 @@
 #include <libhtfs/htfs.h>
 
 int
-htfsopen(HtfsCtx *ctx, char *path)
+htfsopen(HtfsCtx *ctx, const char *path)
 {
 	FILE *fp;
 	AllocMap *map;

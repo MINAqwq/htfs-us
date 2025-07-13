@@ -61,7 +61,7 @@ struct HtfsCtx {
 
 #define FSSEEK(blk) fseek(ctx->drv, (blk) * ctx->sblk.blksize, SEEK_SET)
 
-int htfsopen(HtfsCtx *ctx, char *path);
+int htfsopen(HtfsCtx *ctx, const char *path);
 
 /*
  * writes in memory superblock and allocation map to disk
@@ -201,11 +201,11 @@ enum {
 	Scur  /* from current */
 };
 
-int filecreate(HtfsCtx *ctx, HtfsFileCtx *fctx, char *path, uint64_t root, uint8_t attr);
-int fileopen(HtfsCtx *ctx, HtfsFileCtx *fctx, char *path, uint64_t root);
+int filecreate(HtfsCtx *ctx, HtfsFileCtx *fctx, const char *path, uint64_t root, uint8_t attr);
+int fileopen(HtfsCtx *ctx, HtfsFileCtx *fctx, const char *path, uint64_t root);
 int fileupdate(HtfsCtx *ctx, HtfsFileCtx *fctx);
 
-uint64_t filegetdata(HtfsCtx *ctx, HtfsFileCtx *file, BptKey key);
+uint64_t filegetdata(HtfsCtx *ctx, HtfsFileCtx *file, BptKey key, uint8_t create);
 size_t filewrite(HtfsCtx *ctx, HtfsFileCtx *file, uint8_t *data, size_t len);
 size_t fileread(HtfsCtx *ctx, HtfsFileCtx *file, uint8_t *data, size_t len);
 void fileseek(HtfsFileCtx *file, int64_t where, int mode);

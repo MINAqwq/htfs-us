@@ -7,7 +7,7 @@
 #include <string.h>
 
 int
-filecreate(HtfsCtx *ctx, HtfsFileCtx *fctx, char *path, uint64_t root, uint8_t attr)
+filecreate(HtfsCtx *ctx, HtfsFileCtx *fctx, const char *path, uint64_t root, uint8_t attr)
 {
 	char *dirlistp;
 	char *dirlist;
@@ -38,7 +38,7 @@ filecreate(HtfsCtx *ctx, HtfsFileCtx *fctx, char *path, uint64_t root, uint8_t a
 			root = parent->root;
 			free(parent);
 			parent = NULL;
-			strskip(path);
+			strskip(dirlist);
 		}
 	}
 
@@ -77,7 +77,7 @@ error:
 }
 
 int
-fileopen(HtfsCtx *ctx, HtfsFileCtx *fctx, char *path, uint64_t root)
+fileopen(HtfsCtx *ctx, HtfsFileCtx *fctx, const char *path, uint64_t root)
 {
 	char *dirlist;
 	char *dirlistp;
@@ -135,7 +135,7 @@ fileupdate(HtfsCtx *ctx, HtfsFileCtx *fctx)
 
 
 uint64_t
-filegetdata(HtfsCtx *ctx, HtfsFileCtx *file, BptKey key)
+filegetdata(HtfsCtx *ctx, HtfsFileCtx *file, BptKey key, uint8_t create)
 {
 	int res;
 	uint64_t blk;
@@ -180,7 +180,7 @@ filewrite(HtfsCtx *ctx, HtfsFileCtx *file, uint8_t *data, size_t len)
 	buffer = mkbuffer(ctx);
 
 	for(*key = (file->off / ctx->sblk.blksize) + 1; len != 0; (*key)++){
-		blk = filegetdata(ctx, file, rkey);
+		blk = filegetdata(ctx, file, rkey, 1);
 		if(blk == 0)
 			return bytes;
 
@@ -207,7 +207,45 @@ filewrite(HtfsCtx *ctx, HtfsFileCtx *file, uint8_t *data, size_t len)
 size_t
 fileread(HtfsCtx *ctx, HtfsFileCtx *file, uint8_t *data, size_t len)
 {
-	
+	uint64_t amount;
+	size_t bytes;
+	BptKey rkey;
+	uint64_t *key;
+	uint64_t blk;
+	uint8_t *buffer;
+
+	if(len==0){
+		file->file->size = 0;
+		return 0;
+	}
+
+	key = (uint64_t*)&rkey;
+
+	bytes = 0;
+	buffer = mkbuffer(ctx);
+
+	for(*key = (file->off / ctx->sblk.blksize) + 1; len != 0; (*key)++){
+		blk = filegetdata(ctx, file, rkey, 0);
+		if(blk == 0)
+			return bytes;
+
+		amount = (len >= ctx->sblk.blksize) ? ctx->sblk.blksize : len;
+
+		if(htfsrdblk(ctx, blk, buffer)!=Hok)
+			break;
+
+		memcpy(data, buffer, amount);
+
+		bytes += amount;
+		file->file->size = bytes;
+
+		len -= amount;
+	}
+
+	free(buffer);
+
+	/* TODO: shrink if needed */
+	return bytes;
 }
 
 void
